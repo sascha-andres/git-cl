@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"regexp"
+	"strings"
 	"text/template"
 )
 
@@ -143,17 +144,18 @@ func (clg *ChangeLogGenerator) Build() (result string, err error) {
 
 	err = clg.loadChangeLogEntryTemplate()
 	clg.parseAndGroupCommits()
-	wr := bytes.Buffer{}
-	err = clg.bodyTemplate.Execute(&wr, clg.commits)
+	clg.capitalizeSubjects()
 
-	cld := &ChangeLogData{
-		Header: clg.Header,
-		Footer: clg.Footer,
-		Body:   string(wr.Bytes()),
-	}
-
-	err = clg.changelogTemplate.Execute(os.Stdout, cld)
+	err = clg.generateOutput()
 	return
+}
+
+func (clg *ChangeLogGenerator) capitalizeSubjects() {
+	for s := range clg.commits {
+		for i := range clg.commits[s] {
+			clg.commits[s][i].Subject = strings.ToUpper(clg.commits[s][i].Subject[0:1]) + clg.commits[s][i].Subject[1:]
+		}
+	}
 }
 
 // parseAndGroupCommits
@@ -175,6 +177,10 @@ func (clg *ChangeLogGenerator) parseAndGroupCommits() {
 			if groupNames[i] == "issue" {
 				commit.Scope = match
 			}
+		}
+		if len(commit.Subject) == 0 {
+			l.Printf("omitting commit (%s), no subject provided", commit)
+			continue
 		}
 		gn := clg.getGroup(commit)
 		if gn == "" {
@@ -203,6 +209,21 @@ func (clg *ChangeLogGenerator) loadChangeLogEntryTemplate() (err error) {
 		l.Printf("error constructing template: %s", err)
 		return
 	}
+	return
+}
+
+// generateOutput leverages the templates to generate the changelog
+func (clg *ChangeLogGenerator) generateOutput() (err error) {
+	wr := bytes.Buffer{}
+	err = clg.bodyTemplate.Execute(&wr, clg.commits)
+
+	cld := &ChangeLogData{
+		Header: clg.Header,
+		Footer: clg.Footer,
+		Body:   string(wr.Bytes()),
+	}
+
+	err = clg.changelogTemplate.Execute(os.Stdout, cld)
 	return
 }
 
