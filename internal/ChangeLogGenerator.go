@@ -1,10 +1,10 @@
 package internal
 
 import (
-	"bufio"
 	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"regexp"
@@ -115,19 +115,11 @@ func NewChangeLogGenerator(reader io.Reader, options ...ChangeLogGeneratorOption
 
 // readSubjectLines gets all lines from reader, called from NewChangeLogGenerator
 func (clg *ChangeLogGenerator) readSubjectLines() error {
-	rd := bufio.NewReader(clg.reader)
-	for {
-		line, err := rd.ReadString('\n')
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			l.Printf("read file line error: %v", err)
-			return err
-		}
-		clg.lines = append(clg.lines, line)
+	data, err := ioutil.ReadAll(clg.reader)
+	if err != nil {
+		return err
 	}
-
+	clg.lines = strings.Split(string(data), "\n")
 	return nil
 }
 
