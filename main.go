@@ -4,18 +4,10 @@ import (
 	"fmt"
 	"github.com/sascha-andres/git-cl/internal"
 	"os"
-	"strings"
 )
 
 func main() {
-
-	someString := `feat: abcde
-fix(#1): qwerty
-feat: poiuy
-`
-	myReader := strings.NewReader(someString)
-
-	clg, err := internal.NewChangeLogGenerator(myReader)
+	clg, err := internal.NewChangeLogGenerator(os.Stdin)
 	if err != nil {
 		os.Exit(1)
 	}
