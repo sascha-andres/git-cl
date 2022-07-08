@@ -41,6 +41,7 @@ type (
 		LinkParsers []LinkParsingData `json:"link_parsers"`
 
 		/* runtime stuff */
+
 		// version is used to store the provided version
 		version string
 		// printConfiguration prints out the configuration
@@ -239,6 +240,7 @@ func (clg *ChangeLogGenerator) Build() (result string, err error) {
 	return
 }
 
+// applyLinkParser looks for issues by regex and creates links for them
 func (clg *ChangeLogGenerator) applyLinkParser() {
 	for i := range clg.LinkParsers {
 		clg.LinkParsers[i].regex = regexp.MustCompile(clg.LinkParsers[i].Pattern)
