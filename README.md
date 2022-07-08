@@ -11,6 +11,12 @@ Usage example:
 
     git log --pretty=format:"%s" | go run main.go
 
+### Options
+
+#### version
+
+Pass `--version` to provide a version. Will be appended to the header separated by a space
+
 ### Grouping
 
 In terms of conventional commits the types are mapped to groups like this:

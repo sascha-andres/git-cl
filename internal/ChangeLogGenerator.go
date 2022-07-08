@@ -37,6 +37,8 @@ type (
 		BodyTemplate string
 
 		/* runtime stuff */
+		// version is used to store the provided version
+		version string
 
 		// lines passed to the tool
 		lines []string
@@ -48,8 +50,8 @@ type (
 		changelogTemplate *template.Template
 	}
 
-	// ChangeLogData is passed to changelogTemplate as data
-	ChangeLogData struct {
+	// changeLogData is passed to changelogTemplate as data
+	changeLogData struct {
 		// Header text that will be added to the beginning of the changelog
 		Header string
 		// Footer text that will be added to the end of the changelog
@@ -142,6 +144,7 @@ func (clg *ChangeLogGenerator) Build() (result string, err error) {
 	return
 }
 
+// capitalizeSubjects is used to turn =the first character to upper case
 func (clg *ChangeLogGenerator) capitalizeSubjects() {
 	for s := range clg.commits {
 		for i := range clg.commits[s] {
@@ -209,8 +212,13 @@ func (clg *ChangeLogGenerator) generateOutput() (err error) {
 	wr := bytes.Buffer{}
 	err = clg.bodyTemplate.Execute(&wr, clg.commits)
 
-	cld := &ChangeLogData{
-		Header: clg.Header,
+	header := clg.Header
+	if clg.version != "" {
+		header = fmt.Sprintf("%s %s", header, clg.version)
+	}
+
+	cld := &changeLogData{
+		Header: header,
 		Footer: clg.Footer,
 		Body:   string(wr.Bytes()),
 	}
