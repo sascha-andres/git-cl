@@ -187,6 +187,9 @@ func (clg *ChangeLogGenerator) applyConfiguration() (err error) {
 		}
 		clg.Groups[key] = value
 	}
+	if len(clg.configuration.LinkParsers) > 0 {
+		clg.LinkParsers = clg.configuration.LinkParsers
+	}
 	return
 }
 
