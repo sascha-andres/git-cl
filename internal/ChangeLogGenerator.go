@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"golang.org/x/exp/maps"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"regexp"
@@ -195,24 +196,12 @@ func (clg *ChangeLogGenerator) applyConfiguration() (err error) {
 
 // readSubjectLines gets all lines from reader, called from NewChangeLogGenerator
 func (clg *ChangeLogGenerator) readSubjectLines() error {
-	clg.lines = append(clg.lines, "feat(#7): load config file passed")
-	clg.lines = append(clg.lines, "feat(#6): print config as json document")
-	clg.lines = append(clg.lines, "feat(#3): add ability to provide version")
-	clg.lines = append(clg.lines, "doc(#1): ddd some documentation")
-	clg.lines = append(clg.lines, "fix: read last line of input")
-	clg.lines = append(clg.lines, "feat: make binary read from stdin")
-	clg.lines = append(clg.lines, "feat: capitalize first letter of commit subject")
-	clg.lines = append(clg.lines, "feat: initial implementation")
-	clg.lines = append(clg.lines, "chore: initial commit")
-
+	data, err := ioutil.ReadAll(clg.reader)
+	if err != nil {
+		return err
+	}
+	clg.lines = strings.Split(string(data), "\n")
 	return nil
-
-	//data, err := ioutil.ReadAll(clg.reader)
-	//if err != nil {
-	//	return err
-	//}
-	//clg.lines = strings.Split(string(data), "\n")
-	//return nil
 }
 
 // OverrideGroupForType allows changing the group for a type
