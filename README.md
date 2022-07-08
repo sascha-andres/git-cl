@@ -17,6 +17,14 @@ Usage example:
 
 Pass `--version` to provide a version. Will be appended to the header separated by a space
 
+#### print default configuration
+
+Pass `--print-config` to print a default configuration file to stdout. You may use this to start with a custom one
+
+#### apply configuration from file
+
+Pass `--config-file <path-to-file>` to load config from file
+
 ### Grouping
 
 In terms of conventional commits the types are mapped to groups like this:

@@ -2,9 +2,10 @@ package internal
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
+	"golang.org/x/exp/maps"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"regexp"
@@ -27,27 +28,47 @@ type (
 
 		/* configuration */
 
-		// groups maps a type name to a group name
-		groups map[string]string
+		// Groups maps a type name to a group name
+		Groups map[string]string `json:"groups"`
 		// Header text that will be added to the beginning of the changelog
-		Header string
+		Header string `json:"header"`
 		// Footer text that will be added to the end of the changelog
-		Footer string
+		Footer string `json:"footer"`
 		// BodyTemplate, represents a single release in the changelog
-		BodyTemplate string
+		BodyTemplate string `json:"body_template"`
+		// LinkParsers are a collection of parser configs
+		LinkParsers []LinkParsingData `json:"link_parsers"`
 
 		/* runtime stuff */
 		// version is used to store the provided version
 		version string
+		// printConfiguration prints out the configuration
+		printConfiguration bool
+		// configuration if provided
+		configuration *ChangeLogGenerator
 
 		// lines passed to the tool
 		lines []string
-		// commits groups parsed lines
+		// commits Groups parsed lines
 		commits map[string][]*Commit
 		// bodyTemplate is the instantiated template
 		bodyTemplate *template.Template
 		// changelogTemplate is the overall document
 		changelogTemplate *template.Template
+	}
+
+	// LinkParsingData contains information to apply a match and replace
+	// on issues for example
+	LinkParsingData struct {
+		// Pattern with one group to test for
+		Pattern string `json:"pattern"`
+		// Href with one string replacement for group from pattern
+		Href string `json:"href"`
+		// Text for link with max one string replacement
+		Text string `json:"text"`
+
+		// regex is the compiled regex
+		regex *regexp.Regexp
 	}
 
 	// changeLogData is passed to changelogTemplate as data
@@ -62,7 +83,7 @@ type (
 
 	// Commit represents one commit subject line
 	Commit struct {
-		// Type of commit (eg feat)
+		// Type of commit (e.g. feat)
 		Type string
 		// Scope of commit or issue
 		Scope string
@@ -79,7 +100,7 @@ func NewChangeLogGenerator(reader io.Reader, options ...ChangeLogGeneratorOption
 	clg := &ChangeLogGenerator{
 		reader: reader,
 		lines:  make([]string, 0),
-		groups: map[string]string{
+		Groups: map[string]string{
 			"feat":     "Feature",
 			"fix":      "Bugfix",
 			"doc":      "Other",
@@ -106,29 +127,95 @@ func NewChangeLogGenerator(reader io.Reader, options ...ChangeLogGeneratorOption
 		return nil, err
 	}
 
+	clg.LinkParsers = append(clg.LinkParsers, LinkParsingData{
+		Pattern: "#(\\d+)",
+		Href:    "https://github.com/username/project/issues/%s",
+		Text:    "Link to GitHub issue %s",
+	})
+
+	clg.LinkParsers = append(clg.LinkParsers, LinkParsingData{
+		Pattern: "RFC(\\d+)",
+		Href:    "https://datatracker.ietf.org/doc/html/rfc%s",
+		Text:    "ietf-rfc%s",
+	})
+
 	for _, opt := range options {
 		if nil == opt { // quirk when using functional options, it is possible to pass nil
 			continue
 		}
 		opt(clg)
 	}
+
+	if clg.printConfiguration {
+		return clg, nil
+	}
+
+	err = clg.applyConfiguration()
+	if err != nil {
+		return nil, err
+	}
+
 	return clg, clg.readSubjectLines()
+}
+
+// applyConfiguration adds configuration data from passed configuration option
+func (clg *ChangeLogGenerator) applyConfiguration() (err error) {
+	if clg.configuration == nil {
+		return
+	}
+
+	if clg.configuration.Header != "" {
+		clg.Header = clg.configuration.Header
+	}
+	if clg.configuration.Footer != "" {
+		clg.Footer = clg.configuration.Footer
+	}
+	if clg.configuration.BodyTemplate != "" {
+		clg.BodyTemplate = clg.configuration.BodyTemplate
+	}
+	for key, value := range clg.configuration.Groups {
+		hasKey := false
+		for _, k := range maps.Keys(clg.Groups) {
+			hasKey = k == key
+			if hasKey {
+				break
+			}
+		}
+		if !hasKey {
+			err = fmt.Errorf("no such type: %s", key)
+			return
+		}
+		clg.Groups[key] = value
+	}
+	return
 }
 
 // readSubjectLines gets all lines from reader, called from NewChangeLogGenerator
 func (clg *ChangeLogGenerator) readSubjectLines() error {
-	data, err := ioutil.ReadAll(clg.reader)
-	if err != nil {
-		return err
-	}
-	clg.lines = strings.Split(string(data), "\n")
+	clg.lines = append(clg.lines, "feat(#7): load config file passed")
+	clg.lines = append(clg.lines, "feat(#6): print config as json document")
+	clg.lines = append(clg.lines, "feat(#3): add ability to provide version")
+	clg.lines = append(clg.lines, "doc(#1): ddd some documentation")
+	clg.lines = append(clg.lines, "fix: read last line of input")
+	clg.lines = append(clg.lines, "feat: make binary read from stdin")
+	clg.lines = append(clg.lines, "feat: capitalize first letter of commit subject")
+	clg.lines = append(clg.lines, "feat: initial implementation")
+	clg.lines = append(clg.lines, "chore: initial commit")
+
 	return nil
+
+	//data, err := ioutil.ReadAll(clg.reader)
+	//if err != nil {
+	//	return err
+	//}
+	//clg.lines = strings.Split(string(data), "\n")
+	//return nil
 }
 
 // OverrideGroupForType allows changing the group for a type
 func (clg *ChangeLogGenerator) OverrideGroupForType(typeName, group string) {
-	if _, ok := clg.groups[typeName]; ok {
-		clg.groups[typeName] = group
+	if _, ok := clg.Groups[typeName]; ok {
+		clg.Groups[typeName] = group
 	}
 }
 
@@ -136,12 +223,60 @@ func (clg *ChangeLogGenerator) OverrideGroupForType(typeName, group string) {
 func (clg *ChangeLogGenerator) Build() (result string, err error) {
 	result = ""
 
+	if clg.printConfiguration {
+		data, innerError := json.Marshal(clg)
+		if innerError != nil {
+			err = innerError
+			return
+		}
+		var indented bytes.Buffer
+		err = json.Indent(&indented, data, "", "\t")
+		if err != nil {
+			return
+		}
+		result = indented.String()
+		return
+	}
+
 	err = clg.loadChangeLogEntryTemplate()
 	clg.parseAndGroupCommits()
+	clg.applyLinkParser()
 	clg.capitalizeSubjects()
 
-	err = clg.generateOutput()
+	result, err = clg.generateOutput()
 	return
+}
+
+func (clg *ChangeLogGenerator) applyLinkParser() {
+	for i := range clg.LinkParsers {
+		clg.LinkParsers[i].regex = regexp.MustCompile(clg.LinkParsers[i].Pattern)
+	}
+	for s := range clg.commits {
+		for i := range clg.commits[s] {
+			for _, parser := range clg.LinkParsers {
+				subj := clg.commits[s][i].Subject
+				if parser.regex.MatchString(subj) {
+					matches := parser.regex.FindStringSubmatch(subj)
+					title := matches[0]
+					if parser.Text != "" {
+						title = fmt.Sprintf(parser.Text, matches[1])
+					}
+					clg.commits[s][i].Subject = strings.Replace(clg.commits[s][i].Subject, matches[0], fmt.Sprintf("[%s](%s)", title, fmt.Sprintf(parser.Href, matches[1])), -1)
+				}
+				subj = clg.commits[s][i].Scope
+				if parser.regex.MatchString(subj) {
+					matches := parser.regex.FindStringSubmatch(subj)
+					title := matches[0]
+					if parser.Text != "" {
+						title = fmt.Sprintf(parser.Text, matches[1])
+					}
+					clg.commits[s][i].Scope = strings.Replace(clg.commits[s][i].Scope, matches[0], fmt.Sprintf("[%s](%s)", title, fmt.Sprintf(parser.Href, matches[1])), -1)
+				}
+			}
+
+			clg.commits[s][i].Subject = strings.ToUpper(clg.commits[s][i].Subject[0:1]) + clg.commits[s][i].Subject[1:]
+		}
+	}
 }
 
 // capitalizeSubjects is used to turn =the first character to upper case
@@ -191,7 +326,7 @@ func (clg *ChangeLogGenerator) parseAndGroupCommits() {
 
 // getGroup looks up group for commit
 func (clg *ChangeLogGenerator) getGroup(c *Commit) string {
-	if gn, ok := clg.groups[c.Type]; ok {
+	if gn, ok := clg.Groups[c.Type]; ok {
 		return gn
 	}
 	return ""
@@ -208,7 +343,7 @@ func (clg *ChangeLogGenerator) loadChangeLogEntryTemplate() (err error) {
 }
 
 // generateOutput leverages the templates to generate the changelog
-func (clg *ChangeLogGenerator) generateOutput() (err error) {
+func (clg *ChangeLogGenerator) generateOutput() (result string, err error) {
 	wr := bytes.Buffer{}
 	err = clg.bodyTemplate.Execute(&wr, clg.commits)
 
@@ -223,7 +358,9 @@ func (clg *ChangeLogGenerator) generateOutput() (err error) {
 		Body:   string(wr.Bytes()),
 	}
 
-	err = clg.changelogTemplate.Execute(os.Stdout, cld)
+	var buf bytes.Buffer
+	err = clg.changelogTemplate.Execute(&buf, cld)
+	result = buf.String()
 	return
 }
 
