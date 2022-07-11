@@ -11,6 +11,16 @@ Usage example:
 
     git log --pretty=format:"%s" | go run main.go
 
+Print out a changelog of all commits since the last tag on the current branch:
+
+    git log --pretty=format:"%s" ( git tag -l --sort=-creatordate  --format='%(if)%(*objectname)%(then)%(*objectname:short)%(else)%(objectname:short)%(end)' | head -n 1 )...HEAD
+
+Print out a changelog of all commits between the last two tags:
+
+    git log --pretty=format:"%s" ( git tag -l --sort=-creatordate  --format='%(if)%(*objectname)%(then)%(*objectname:short)%(else)%(objectname:short)%(end)' | head -n 1 )...( git tag -l --sort=-creatordate  --format='%(if)%(*objectname)%(then)%(*objectname:short)%(else)%(objectname:short)%(end)' | head -n 2 | tail -n 1 )
+
+Note: I'm a fish user, so for bash you probably have to adjust slightly
+
 ### Options
 
 #### version
