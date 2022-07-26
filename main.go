@@ -2,8 +2,8 @@ package main
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
+	"github.com/sascha-andres/flag"
 	"github.com/sascha-andres/git-cl/internal"
 	"io/ioutil"
 	"os"
