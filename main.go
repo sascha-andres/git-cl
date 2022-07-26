@@ -11,12 +11,16 @@ import (
 
 var (
 	version, configFile string
-	printConfig         bool
+	help, printConfig   bool
 )
 
 // main you know
 func main() {
 	flag.Parse()
+	if help {
+		flag.Usage()
+		os.Exit(0)
+	}
 
 	options := make([]internal.ChangeLogGeneratorOption, 0)
 	if printConfig {
@@ -59,15 +63,8 @@ func main() {
 }
 
 func init() {
-	flag.StringVar(&version, "version", lookupEnvOrString("GIT_CL_VERSION", ""), "provide version")
-	flag.StringVar(&configFile, "config-file", lookupEnvOrString("GIT_CL_CONFIG_FILE", ""), "provide path to config file")
+	flag.BoolVar(&help, "help", false, "show help")
+	flag.StringVar(&version, "version", "", "provide version")
+	flag.StringVar(&configFile, "config-file", "", "provide path to config file")
 	flag.BoolVar(&printConfig, "print-config", false, "pass to print used config")
-}
-
-// lookupEnvOrString returns a default value or a value based on an env variable
-func lookupEnvOrString(key string, defaultVal string) string {
-	if val, ok := os.LookupEnv(key); ok {
-		return val
-	}
-	return defaultVal
 }
