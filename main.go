@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/sascha-andres/flag"
 	"github.com/sascha-andres/git-cl/internal"
-	"io/ioutil"
 	"os"
 )
 
@@ -30,15 +29,15 @@ func main() {
 		options = append(options, internal.WithVersion(version))
 	}
 	if !printConfig && configFile != "" {
-		data, err := ioutil.ReadFile(configFile)
+		data, err := os.ReadFile(configFile)
 		if err != nil {
-			fmt.Fprint(os.Stderr, fmt.Sprintf("error reading configuration file: %s", err))
+			_, _ = fmt.Fprint(os.Stderr, fmt.Sprintf("error reading configuration file: %s", err))
 			os.Exit(1)
 		}
 		var c internal.ChangeLogGenerator
 		err = json.Unmarshal(data, &c)
 		if err != nil {
-			fmt.Fprint(os.Stderr, fmt.Sprintf("error parsing configuration: %s", err))
+			_, _ = fmt.Fprint(os.Stderr, fmt.Sprintf("error parsing configuration: %s", err))
 			os.Exit(1)
 		}
 		options = append(options, internal.WithConfiguration(&c))
