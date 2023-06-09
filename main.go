@@ -3,9 +3,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/sascha-andres/flag"
-	"github.com/sascha-andres/git-cl/internal"
 	"os"
+
+	"github.com/sascha-andres/git-cl/internal"
+	"github.com/sascha-andres/reuse/flag"
 )
 
 var (

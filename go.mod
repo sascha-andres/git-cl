@@ -1,8 +1,7 @@
 module github.com/sascha-andres/git-cl
 
-go 1.18
+go 1.20
 
-require (
-	github.com/sascha-andres/flag v0.1.0
-	golang.org/x/exp v0.0.0-20220706164943-b4a6d9510983
-)
+require golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1
+
+require github.com/sascha-andres/reuse v0.0.6
