@@ -1,7 +1,7 @@
 module github.com/sascha-andres/git-cl
 
-go 1.20
+go 1.23.0
 
-require golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1
+require golang.org/x/exp v0.0.0-20250106191152-7588d65b2ba8
 
-require github.com/sascha-andres/reuse v0.0.6
+require github.com/sascha-andres/reuse v0.7.0
