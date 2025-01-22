@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/sascha-andres/git-cl/internal"
 	"github.com/sascha-andres/reuse/flag"
+
+	"github.com/sascha-andres/git-cl/internal"
 )
 
 var (
