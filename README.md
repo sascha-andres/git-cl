@@ -3,6 +3,12 @@
 is a tool to generate a changelog. It works by passing a list of commit messages either through a file
 or through stdin. Those will get parsed and outputted as a changelog.
 
+## Installation
+
+macOS and Linux (amd64/arm64), via Homebrew:
+
+    brew install --cask sascha-andres/tap/git-cl
+
 ## Usage
 
 Pass a list of commit messages (just the subject) via stdin. They will be transformed to a Markdownfile.
