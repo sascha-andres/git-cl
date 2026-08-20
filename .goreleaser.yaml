@@ -43,7 +43,7 @@ homebrew_casks:
     hooks:
       post:
         install: |
-          system "codesign", "--force", "-s", "-", "#{bin}/git-cl"
+          system_command "codesign", args: ["--force", "-s", "-", "#{staged_path}/git-cl"]
 
 snapshot:
   version_template: "{{ incpatch .Version }}-next"
