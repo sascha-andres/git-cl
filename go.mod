@@ -1,6 +1,6 @@
 module github.com/sascha-andres/git-cl
 
-go 1.27.0
+go 1.27.3
 
 require (
 	github.com/sascha-andres/reuse v0.11.0
