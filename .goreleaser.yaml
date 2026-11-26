@@ -40,10 +40,6 @@ homebrew_casks:
     description: "Generates a changelog from a list of conventional commit messages"
     binaries:
       - git-cl
-    hooks:
-      post:
-        install: |
-          system_command "codesign", args: ["--force", "-s", "-", "#{staged_path}/git-cl"]
 
 snapshot:
   version_template: "{{ incpatch .Version }}-next"
